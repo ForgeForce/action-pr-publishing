@@ -23,7 +23,7 @@ export async function run(): Promise<void> {
     const response = await axios.get(artifact!!.archive_download_url, {
       responseType: 'blob',
       headers: {
-        'Authorization': process.env['GITHUB_TOKEN']!!
+        'Authorization': `Bearer ${process.env['GITHUB_TOKEN']!!}`
       }
     })
 
