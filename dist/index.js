@@ -48228,7 +48228,7 @@ async function run() {
             .then(art => art.data.artifacts.find(ar => ar.name == 'maven-publish'));
         console.log(`Found artifact: ${artifact.archive_download_url}`);
         const response = await axios_1.default.get(artifact.archive_download_url, {
-            responseType: 'blob',
+            responseType: 'arraybuffer',
             headers: {
                 Authorization: `Bearer ${process.env['GITHUB_TOKEN']}`
             }
