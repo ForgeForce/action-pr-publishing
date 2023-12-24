@@ -48238,6 +48238,7 @@ async function run() {
             console.log('Found path: ' + relativePath);
         });
         const payload = JSON.parse(await zip.file('event.json').async('string'));
+        console.log(payload);
         const prNumber = payload.pull_request.number;
         console.log(`PR number: ${prNumber}`);
     }

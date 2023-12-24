@@ -37,6 +37,7 @@ export async function run(): Promise<void> {
 
     const payload = JSON.parse(await zip.file('event.json')!.async('string'))
 
+    console.log(payload)
     const prNumber = payload.pull_request.number as number
 
     console.log(`PR number: ${prNumber}`)
