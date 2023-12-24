@@ -15,7 +15,7 @@ runs:
     - uses: gradle/gradle-build-action@v2
       name: Publish with Gradle to directory
       with:
-        arguments: ${{ inputs.publishing-task }} --init-script ${{ env.GITHUB_ACTION }}/upload/init.gradle
+        arguments: ${{ inputs.publishing-task }} --init-script $GITHUB_ACTION_PATH/upload/init.gradle
     - uses: actions/upload-artifact@v3
       name: Upload maven directory
       with:
