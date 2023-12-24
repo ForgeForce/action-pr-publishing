@@ -48239,10 +48239,11 @@ async function run() {
         const prNumber = (payload.pull_request?.number ?? 0);
         console.log(`PR number: ${prNumber}`);
         const filter = (0, core_1.getInput)('artifacts_base_path');
-        const toUpload = zip.filter((relativePath, file) => {
+        const toUpload = zip.filter((_relativePath, file) => {
             return (!file.dir && file.name != 'event.json' && file.name.startsWith(filter));
         });
         const basePath = `https://maven.pkg.github.com/${github_1.context.repo.owner}/${github_1.context.repo.repo}/pr${prNumber}/`;
+        let uploadAmount = 0;
         for (const file of toUpload) {
             await axios_1.default.put(basePath + file.name, await file.async('arraybuffer'), {
                 auth: {
@@ -48251,7 +48252,9 @@ async function run() {
                 }
             });
             console.log(`Uploaded ${file.name}`);
+            uploadAmount++;
         }
+        console.log(`Finished uploading ${uploadAmount} items`);
     }
     catch (error) {
         // Fail the workflow run if an error occurs
