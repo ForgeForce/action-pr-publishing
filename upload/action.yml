@@ -12,10 +12,14 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Compute init script path
+      id: initscriptpath
+      shell: bash
+      run: echo "path=$(echo $GITHUB_ACTION_PATH)/upload/init.gradle" >> $GITHUB_OUTPUT
     - uses: gradle/gradle-build-action@v2
       name: Publish with Gradle to directory
       with:
-        arguments: ${{ inputs.publishing-task }} --init-script $GITHUB_ACTION_PATH/upload/init.gradle
+        arguments: ${{ inputs.publishing-task }} --init-script ${{ steps.initscriptpath.outputs.path }}
     - uses: actions/upload-artifact@v3
       name: Upload maven directory
       with:
