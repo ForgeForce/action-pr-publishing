@@ -24,4 +24,6 @@ runs:
       name: Upload maven directory
       with:
         name: maven-publish
-        path: ${{ inputs.root-dir }}/_packages_prs
+        path: |
+          ${{ inputs.root-dir }}/_packages_prs
+          ${{ env.GITHUB_EVENT_PATH }}
