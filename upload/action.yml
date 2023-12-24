@@ -17,7 +17,7 @@ runs:
       shell: bash
       run: |
         echo "path=$(echo $GITHUB_ACTION_PATH)/init.gradle" >> $GITHUB_OUTPUT
-        echo "event_path=$(echo GITHUB_EVENT_PATH)" >> $GITHUB_OUTPUT
+        echo "event_path=$(echo $GITHUB_EVENT_PATH)" >> $GITHUB_OUTPUT
     - uses: gradle/gradle-build-action@v2
       name: Publish with Gradle to directory
       with:
