@@ -48237,6 +48237,9 @@ async function run() {
         zip.forEach((relativePath, file) => {
             console.log('Found path: ' + relativePath);
         });
+        const payload = JSON.parse(await zip.file('event.json').async('string'));
+        const prNumber = payload.pull_request.number;
+        console.log(`PR number: ${prNumber}`);
     }
     catch (error) {
         // Fail the workflow run if an error occurs

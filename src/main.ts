@@ -34,6 +34,12 @@ export async function run(): Promise<void> {
     zip.forEach((relativePath, file) => {
       console.log('Found path: ' + relativePath)
     })
+
+    const payload = JSON.parse(await zip.file('event.json')!.async('string'))
+
+    const prNumber = payload.pull_request.number as number
+
+    console.log(`PR number: ${prNumber}`)
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
