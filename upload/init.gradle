@@ -1,5 +1,5 @@
-afterEvaluate {
-    allprojects { Project proj ->
+allprojects { Project p ->
+    afterEvaluate { Project proj ->
         if (proj.plugins.hasPlugin('maven-publish')) {
             (project.extensions.getByType(PublishingExtension) as PublishingExtension).repositories {
                 maven {
