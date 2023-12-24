@@ -22,10 +22,11 @@ runs:
       name: Publish with Gradle to directory
       with:
         arguments: ${{ inputs.publishing-task }} --init-script ${{ steps.initscriptpath.outputs.path }}
+    - name: Add event json
+      shell: bash
+      run: cp ${{ steps.initscriptpath.outputs.event_path }} ${{ inputs.root-dir }}/_packages_prs/event.json
     - uses: actions/upload-artifact@v3
       name: Upload maven directory
       with:
         name: maven-publish
-        path: |
-          ${{ inputs.root-dir }}/_packages_prs
-          ${{ steps.initscriptpath.outputs.event_path }}
+        path: ${{ inputs.root-dir }}/_packages_prs
