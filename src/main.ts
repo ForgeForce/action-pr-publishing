@@ -3,7 +3,7 @@ import { context, getOctokit } from '@actions/github'
 import { GitHub } from '@actions/github/lib/utils'
 import axios from 'axios'
 import JSZip from 'jszip'
-import * as process from "process";
+import * as process from 'process'
 
 export async function run(): Promise<void> {
   try {
@@ -20,10 +20,12 @@ export async function run(): Promise<void> {
       })
       .then(art => art.data.artifacts.find(ar => ar.name == 'maven-publish'))
 
+    console.log(`Found artifact: ${artifact!.archive_download_url}`)
+
     const response = await axios.get(artifact!!.archive_download_url, {
       responseType: 'blob',
       headers: {
-        'Authorization': `Bearer ${process.env['GITHUB_TOKEN']!!}`
+        Authorization: `Bearer ${process.env['GITHUB_TOKEN']!!}`
       }
     })
 

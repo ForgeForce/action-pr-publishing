@@ -48215,6 +48215,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const github_1 = __nccwpck_require__(5438);
 const axios_1 = __importDefault(__nccwpck_require__(8757));
 const jszip_1 = __importDefault(__nccwpck_require__(3592));
+const process = __importStar(__nccwpck_require__(7282));
 async function run() {
     try {
         const octo = (0, github_1.getOctokit)(process.env['GITHUB_TOKEN']);
@@ -48225,8 +48226,12 @@ async function run() {
             run_id: workflow_run.id
         })
             .then(art => art.data.artifacts.find(ar => ar.name == 'maven-publish'));
+        console.log(`Found artifact: ${artifact.archive_download_url}`);
         const response = await axios_1.default.get(artifact.archive_download_url, {
-            responseType: 'blob'
+            responseType: 'blob',
+            headers: {
+                Authorization: `Bearer ${process.env['GITHUB_TOKEN']}`
+            }
         });
         const zip = await jszip_1.default.loadAsync(response.data);
         zip.forEach((relativePath, file) => {
@@ -48385,6 +48390,14 @@ module.exports = require("path");
 
 "use strict";
 module.exports = require("perf_hooks");
+
+/***/ }),
+
+/***/ 7282:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("process");
 
 /***/ }),
 
