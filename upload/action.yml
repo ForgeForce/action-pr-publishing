@@ -1,0 +1,23 @@
+name: 'pr-publishing'
+description: 'Upload PR contents'
+
+inputs:
+  root-dir:
+    description: 'The root directory of the Gradle project'
+    default: '.'
+  publishing-task:
+    description: 'The task to run to publish'
+    default: 'publishAllPublicationsTo_githubPackages_PRsRepository'
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: gradle/gradle-build-action@v2
+      name: Publish with Gradle to directory
+      with:
+        arguments: ${{ inputs.publishing-task }} --init-script ${{ env.GITHUB_ACTION_PATH }}/upload/init.gradle
+    - uses: actions/upload-artifact@v3
+      name: Upload maven directory
+      with:
+        name: maven-publish
+        path: ${{ inputs.root-dir }}/_packages_prs
