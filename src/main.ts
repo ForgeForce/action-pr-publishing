@@ -39,13 +39,14 @@ export async function run(): Promise<void> {
     console.log(`PR number: ${prNumber}`)
 
     const filter = getInput('artifacts_base_path')
-    const toUpload = zip.filter((relativePath, file) => {
+    const toUpload = zip.filter((_relativePath, file) => {
       return (
         !file.dir && file.name != 'event.json' && file.name.startsWith(filter)
       )
     })
 
     const basePath = `https://maven.pkg.github.com/${context.repo.owner}/${context.repo.repo}/pr${prNumber}/`
+    let uploadAmount = 0
     for (const file of toUpload) {
       await axios.put(basePath + file.name, await file.async('arraybuffer'), {
         auth: {
@@ -54,7 +55,10 @@ export async function run(): Promise<void> {
         }
       })
       console.log(`Uploaded ${file.name}`)
+      uploadAmount++
     }
+
+    console.log(`Finished uploading ${uploadAmount} items`)
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
