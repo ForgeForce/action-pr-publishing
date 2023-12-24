@@ -4,6 +4,7 @@ import { GitHub } from '@actions/github/lib/utils'
 import axios from 'axios'
 import JSZip from 'jszip'
 import * as process from 'process'
+import { getInput } from '@actions/core'
 
 export async function run(): Promise<void> {
   try {
@@ -31,16 +32,29 @@ export async function run(): Promise<void> {
 
     const zip = await JSZip.loadAsync(response.data)
 
-    zip.forEach((relativePath, file) => {
-      console.log('Found path: ' + relativePath)
-    })
-
     const payload = JSON.parse(await zip.file('event.json')!.async('string'))
 
-    console.log(payload)
-    const prNumber = payload.pull_request.number as number
+    const prNumber = (payload.pull_request?.number ?? 0) as number
 
     console.log(`PR number: ${prNumber}`)
+
+    const filter = getInput('artifacts_base_path')
+    const toUpload = zip.filter((relativePath, file) => {
+      return (
+        !file.dir && file.name != 'event.json' && file.name.startsWith(filter)
+      )
+    })
+
+    const basePath = `https://maven.pkg.github.com/${context.repo.owner}/${context.repo.repo}/pr${prNumber}/`
+    for (const file of toUpload) {
+      await axios.put(basePath + file.name, await file.async('arraybuffer'), {
+        auth: {
+          username: 'actions',
+          password: process.env['GITHUB_TOKEN']!
+        }
+      })
+      console.log(`Uploaded ${file.name}`)
+    }
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)

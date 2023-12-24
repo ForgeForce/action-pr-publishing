@@ -48216,6 +48216,7 @@ const github_1 = __nccwpck_require__(5438);
 const axios_1 = __importDefault(__nccwpck_require__(8757));
 const jszip_1 = __importDefault(__nccwpck_require__(3592));
 const process = __importStar(__nccwpck_require__(7282));
+const core_1 = __nccwpck_require__(2186);
 async function run() {
     try {
         const octo = (0, github_1.getOctokit)(process.env['GITHUB_TOKEN']);
@@ -48234,13 +48235,23 @@ async function run() {
             }
         });
         const zip = await jszip_1.default.loadAsync(response.data);
-        zip.forEach((relativePath, file) => {
-            console.log('Found path: ' + relativePath);
-        });
         const payload = JSON.parse(await zip.file('event.json').async('string'));
-        console.log(payload);
-        const prNumber = payload.pull_request.number;
+        const prNumber = (payload.pull_request?.number ?? 0);
         console.log(`PR number: ${prNumber}`);
+        const filter = (0, core_1.getInput)('artifacts_base_path');
+        const toUpload = zip.filter((relativePath, file) => {
+            return (!file.dir && file.name != 'event.json' && file.name.startsWith(filter));
+        });
+        const basePath = `https://maven.pkg.github.com/${github_1.context.repo.owner}/${github_1.context.repo.repo}/pr${prNumber}/`;
+        for (const file of toUpload) {
+            await axios_1.default.put(basePath + file.name, await file.async('arraybuffer'), {
+                auth: {
+                    username: 'actions',
+                    password: process.env['GITHUB_TOKEN']
+                }
+            });
+            console.log(`Uploaded ${file.name}`);
+        }
     }
     catch (error) {
         // Fail the workflow run if an error occurs
