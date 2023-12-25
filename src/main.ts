@@ -253,13 +253,16 @@ async function generateMDK(
     })
   )
 
+  console.log(`Generated and uploaded MDK`)
+
   return `
 ### MDK installation
-\`\`\`bash
+\`\`\`sh
 mkdir ${context.repo.repo}-pr${prNumber}
 cd ${context.repo.repo}-pr${prNumber}
-curl https://prmaven.neoforged.net/${context.repo.repo}/pr${prNumber}/${path} -o mdk.zip
+curl -L https://prmaven.neoforged.net/${context.repo.repo}/pr${prNumber}/${path} -o mdk.zip
 jar xf mdk.zip
+rm mdk.zip
 \`\`\`
 
 [Installer link](https://prmaven.neoforged.net/${context.repo.repo}/pr${prNumber}/${artifact.group}/${artifact.name}/${artifact.version}/${artifact.name}-${artifact.version}-installer.jar)`

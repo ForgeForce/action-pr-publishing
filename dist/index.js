@@ -50499,13 +50499,15 @@ async function generateMDK(uploader, prNumber, artifact, repoBlock) {
     await uploader(path, await zip.generateAsync({
         type: 'arraybuffer'
     }));
+    console.log(`Generated and uploaded MDK`);
     return `
 ### MDK installation
-\`\`\`bash
+\`\`\`sh
 mkdir ${github_1.context.repo.repo}-pr${prNumber}
 cd ${github_1.context.repo.repo}-pr${prNumber}
-curl https://prmaven.neoforged.net/${github_1.context.repo.repo}/pr${prNumber}/${path} -o mdk.zip
+curl -L https://prmaven.neoforged.net/${github_1.context.repo.repo}/pr${prNumber}/${path} -o mdk.zip
 jar xf mdk.zip
+rm mdk.zip
 \`\`\`
 
 [Installer link](https://prmaven.neoforged.net/${github_1.context.repo.repo}/pr${prNumber}/${artifact.group}/${artifact.name}/${artifact.version}/${artifact.name}-${artifact.version}-installer.jar)`;
