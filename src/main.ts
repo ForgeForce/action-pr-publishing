@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import { context, getOctokit } from '@actions/github'
 import { GitHub } from '@actions/github/lib/utils'
-import axios from 'axios'
+import axios, { AxiosRequestConfig } from 'axios'
 import JSZip from 'jszip'
 import * as process from 'process'
 import { getInput } from '@actions/core'
@@ -48,14 +48,19 @@ export async function run(): Promise<void> {
 
     const artifacts: PublishedArtifact[] = []
     const basePath = `https://maven.pkg.github.com/${context.repo.owner}/${context.repo.repo}/pr${prNumber}/`
-    let uploadAmount = 0
-    for (const file of toUpload) {
-      await axios.put(basePath + file.name, await file.async('arraybuffer'), {
+
+    const uploader = async (path: string, bf: ArrayBuffer) => {
+      await axios.put(basePath + path, bf, {
         auth: {
           username: 'actions',
           password: token
         }
       })
+    }
+
+    let uploadAmount = 0
+    for (const file of toUpload) {
+      await uploader(file.name, await file.async('arraybuffer'))
       console.log(`Uploaded ${file.name}`)
       uploadAmount++
 
@@ -84,10 +89,6 @@ export async function run(): Promise<void> {
       console.log(`\t${art.group}:${art.name}:${art.version}`)
     )
 
-    const comment = await generateComment(octo, prNumber, artifacts)
-    console.log(`Message:\n`)
-    console.log(comment)
-
     if (prNumber == 0) return
     const pr = await octo.rest.pulls.get({
       ...context.repo,
@@ -96,6 +97,13 @@ export async function run(): Promise<void> {
 
     if (pr.data.state != 'open') return
 
+    let repoBlock: string
+    let comment = await generateComment(
+      octo,
+      prNumber,
+      artifacts,
+      rb => (repoBlock = rb)
+    )
     const self = getInput('self-name')
 
     let selfCommentId = null
@@ -110,6 +118,20 @@ export async function run(): Promise<void> {
         if (comment.user!.login == self) {
           selfCommentId = comment.id
         }
+      }
+    }
+
+    if (context.repo.repo.toLowerCase() == 'neoforge') {
+      const neoArtifact = artifacts.find(
+        art => art.group == 'net.neoforged' && art.name == 'neoforge'
+      )
+      if (neoArtifact != null) {
+        comment += await generateMDK(
+          uploader,
+          prNumber,
+          neoArtifact,
+          repoBlock!
+        )
       }
     }
 
@@ -135,7 +157,8 @@ export async function run(): Promise<void> {
 async function generateComment(
   octo: InstanceType<typeof GitHub>,
   prNumber: number,
-  artifacts: PublishedArtifact[]
+  artifacts: PublishedArtifact[],
+  repoBlock: (block: string) => void
 ): Promise<string> {
   let comment = `## PR Publishing  \n### The artifacts published by this PR:  `
   for (const artifactName of artifacts) {
@@ -152,7 +175,7 @@ async function generateComment(
     .map(art => `includeModule('${art.group}', '${art.name}')`)
     .map(a => `            ${a}`) // Indent
     .join('\n')
-  comment += `
+  const repoBlockStr = `
 \`\`\`gradle
 repositories {
     maven {
@@ -164,7 +187,70 @@ ${includeModules}
     }
 }
 \`\`\``
+  comment += repoBlockStr
+  repoBlock(repoBlockStr)
   return comment
+}
+
+// NeoForge repo specific
+async function generateMDK(
+  uploader: (path: string, bf: ArrayBuffer) => Promise<void>,
+  prNumber: number,
+  artifact: PublishedArtifact,
+  repoBlock: string
+): Promise<string> {
+  const versions = artifact.version.split('.')
+  const mcVersion = `1.${versions[0]}.${versions[1]}`
+
+  const config = {
+    responseType: 'arraybuffer'
+  } as AxiosRequestConfig
+  const response = await axios
+    .get(`https://github.com/neoforged/mdk/zipball/${mcVersion}`, config)
+    .catch(_ =>
+      axios.get('https://github.com/neoforged/mdk/zipball/main', config)
+    )
+
+  const zip = await JSZip.loadAsync(response.data)
+
+  const gradleProperties = (
+    await zip.file('gradle.properties')!.async('string')
+  ).split('\n')
+  const neoVersionIndex = gradleProperties.findIndex(value =>
+    value.startsWith('neo_version=')
+  )
+  gradleProperties[neoVersionIndex] = `neo_version=${artifact.version}`
+
+  const mcVersionIndex = gradleProperties.findIndex(value =>
+    value.startsWith('minecraft_version=')
+  )
+  gradleProperties[mcVersionIndex] = `minecraft_version=${mcVersion}`
+
+  zip.file('gradle.properties', gradleProperties.join('\n'))
+
+  let buildGradle = await zip.file('build.gradle')!.async('string')
+  buildGradle += `\n${repoBlock}`
+
+  zip.file('build.gradle', buildGradle)
+
+  const path = `${artifact.group}/${artifact.name}/${artifact.version}/mdk-pr${prNumber}.zip`
+  await uploader(
+    path,
+    await zip.generateAsync({
+      type: 'arraybuffer'
+    })
+  )
+
+  return `
+### MDK installation
+\`\`\`bash
+mkdir ${context.repo.repo}-pr${prNumber}
+cd ${context.repo.repo}-pr${prNumber}
+curl https://prmaven.neoforged.net/${context.repo.repo}/pr${prNumber}/${path} -o mdk.zip
+jar xf mdk.zip
+\`\`\`
+
+[Installer link](https://prmaven.neoforged.net/${context.repo.repo}/pr${prNumber}/${artifact.group}/${artifact.name}/${artifact.version}/${artifact.name}-${artifact.version}-installer.jar)`
 }
 
 interface WorkflowRun {
