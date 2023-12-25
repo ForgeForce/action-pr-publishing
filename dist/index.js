@@ -50454,9 +50454,7 @@ async function generateComment(octo, prNumber, artifacts, repoBlock) {
         .map(art => `includeModule('${art.group}', '${art.name}')`)
         .map(a => `            ${a}`) // Indent
         .join('\n');
-    const repoBlockStr = `
-\`\`\`gradle
-repositories {
+    const repoBlockStr = `repositories {
     maven {
         name 'Maven for PR #${prNumber}'
         url 'https://prmaven.neoforged.net/${github_1.context.repo.repo}/pr${prNumber}'
@@ -50464,9 +50462,11 @@ repositories {
 ${includeModules}
         }
     }
-}
+}`;
+    comment += `
+\`\`\`gradle
+${repoBlockStr}
 \`\`\``;
-    comment += repoBlockStr;
     repoBlock(repoBlockStr);
     return comment;
 }
