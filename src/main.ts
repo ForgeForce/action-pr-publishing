@@ -274,7 +274,7 @@ jar xf mdk.zip
 rm mdk.zip
 \`\`\`
 
-To test a production environment, you can download the installer from [here](https://prmaven.neoforged.net/${context.repo.repo}/pr${prNumber}/${artifact.group}/${artifact.name}/${artifact.version}/${artifact.name}-${artifact.version}-installer.jar)`
+To test a production environment, you can download the installer from [here](https://prmaven.neoforged.net/${context.repo.repo}/pr${prNumber}/${artifact.group}/${artifact.name}/${artifact.version}/${artifact.name}-${artifact.version}-installer.jar).`
 }
 
 interface WorkflowRun {
