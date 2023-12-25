@@ -50448,7 +50448,7 @@ async function generateComment(octo, prNumber, artifacts) {
 repositories {
     maven {
         name 'Maven for PR #${prNumber}'
-        url 'https://prmaven.neoforged.net/${github_1.context.repo.owner}/pr${prNumber}'
+        url 'https://prmaven.neoforged.net/${github_1.context.repo.repo}/pr${prNumber}'
         content {
 ${includeModules}
         }
