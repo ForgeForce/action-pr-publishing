@@ -50350,7 +50350,7 @@ async function run() {
         const payload = JSON.parse(await zip.file('event.json').async('string'));
         const prNumber = (payload.pull_request?.number ?? 0);
         console.log(`PR number: ${prNumber}`);
-        const filter = (0, core_1.getInput)('artifacts_base_path');
+        const filter = (0, core_1.getInput)('artifacts-base-path');
         const toUpload = zip.filter((_relativePath, file) => {
             return (!file.dir && file.name != 'event.json' && file.name.startsWith(filter));
         });
@@ -50394,8 +50394,7 @@ async function run() {
         });
         if (pr.data.state != 'open')
             return;
-        let repoBlock;
-        let comment = await generateComment(octo, prNumber, artifacts, rb => (repoBlock = rb));
+        let { comment, repoBlock } = await generateComment(octo, prNumber, artifacts);
         const self = (0, core_1.getInput)('self-name');
         let selfCommentId = null;
         for await (const comments of octo.paginate.iterator(octo.rest.issues.listComments, {
@@ -50414,6 +50413,15 @@ async function run() {
                 comment += await generateMDK(uploader, prNumber, neoArtifact, repoBlock);
             }
         }
+        const oldComment = comment;
+        comment = `
+<details>
+
+<summary>PR Publishing</summary>
+
+${oldComment}
+
+</details>`;
         if (selfCommentId) {
             await octo.rest.issues.updateComment({
                 ...github_1.context.repo,
@@ -50444,8 +50452,8 @@ async function run() {
     }
 }
 exports.run = run;
-async function generateComment(octo, prNumber, artifacts, repoBlock) {
-    let comment = `## PR Publishing  \n### The artifacts published by this PR:  `;
+async function generateComment(octo, prNumber, artifacts) {
+    let comment = `### The artifacts published by this PR:  `;
     for (const artifactName of artifacts) {
         const artifact = await octo.rest.packages.getPackageForOrganization({
             org: github_1.context.repo.owner,
@@ -50459,10 +50467,10 @@ async function generateComment(octo, prNumber, artifacts, repoBlock) {
         .map(art => `includeModule('${art.group}', '${art.name}')`)
         .map(a => `            ${a}`) // Indent
         .join('\n');
-    const repoBlockStr = `repositories {
+    const repoBlock = `repositories {
     maven {
         name 'Maven for PR #${prNumber}' // https://github.com/${github_1.context.repo.owner}/${github_1.context.repo.repo}/pull/${prNumber}
-        url 'https://prmaven.neoforged.net/${github_1.context.repo.repo}/pr${prNumber}'
+        url '${(0, core_1.getInput)('base-maven-url')}/${github_1.context.repo.repo}/pr${prNumber}'
         content {
 ${includeModules}
         }
@@ -50470,10 +50478,9 @@ ${includeModules}
 }`;
     comment += `
 \`\`\`gradle
-${repoBlockStr}
+${repoBlock}
 \`\`\``;
-    repoBlock(repoBlockStr);
-    return comment;
+    return { comment, repoBlock };
 }
 // NeoForge repo specific
 async function generateMDK(uploader, prNumber, artifact, repoBlock) {
@@ -50513,12 +50520,12 @@ The script will clone the MDK in a folder named \`${github_1.context.repo.repo}-
 \`\`\`sh
 mkdir ${github_1.context.repo.repo}-pr${prNumber}
 cd ${github_1.context.repo.repo}-pr${prNumber}
-curl -L https://prmaven.neoforged.net/${github_1.context.repo.repo}/pr${prNumber}/${path} -o mdk.zip
+curl -L ${(0, core_1.getInput)('base-maven-url')}/${github_1.context.repo.repo}/pr${prNumber}/${path} -o mdk.zip
 jar xf mdk.zip
 rm mdk.zip
 \`\`\`
 
-To test a production environment, you can download the installer from [here](https://prmaven.neoforged.net/${github_1.context.repo.repo}/pr${prNumber}/${artifact.group}/${artifact.name}/${artifact.version}/${artifact.name}-${artifact.version}-installer.jar).`;
+To test a production environment, you can download the installer from [here](${(0, core_1.getInput)('base-maven-url')}/${github_1.context.repo.repo}/pr${prNumber}/${artifact.group}/${artifact.name}/${artifact.version}/${artifact.name}-${artifact.version}-installer.jar).`;
 }
 
 

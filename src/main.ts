@@ -5,7 +5,7 @@ import axios, { AxiosRequestConfig } from 'axios'
 import JSZip from 'jszip'
 import * as process from 'process'
 import { getInput } from '@actions/core'
-import { XMLBuilder, XMLParser } from 'fast-xml-parser'
+import { XMLParser } from 'fast-xml-parser'
 
 export async function run(): Promise<void> {
   try {
@@ -39,7 +39,7 @@ export async function run(): Promise<void> {
 
     console.log(`PR number: ${prNumber}`)
 
-    const filter = getInput('artifacts_base_path')
+    const filter = getInput('artifacts-base-path')
     const toUpload = zip.filter((_relativePath, file) => {
       return (
         !file.dir && file.name != 'event.json' && file.name.startsWith(filter)
@@ -97,12 +97,10 @@ export async function run(): Promise<void> {
 
     if (pr.data.state != 'open') return
 
-    let repoBlock: string
-    let comment = await generateComment(
+    let { comment, repoBlock } = await generateComment(
       octo,
       prNumber,
-      artifacts,
-      rb => (repoBlock = rb)
+      artifacts
     )
     const self = getInput('self-name')
 
@@ -134,6 +132,16 @@ export async function run(): Promise<void> {
         )
       }
     }
+
+    const oldComment = comment
+    comment = `
+<details>
+
+<summary>PR Publishing</summary>
+
+${oldComment}
+
+</details>`
 
     if (selfCommentId) {
       await octo.rest.issues.updateComment({
@@ -167,10 +175,12 @@ export async function run(): Promise<void> {
 async function generateComment(
   octo: InstanceType<typeof GitHub>,
   prNumber: number,
-  artifacts: PublishedArtifact[],
-  repoBlock: (block: string) => void
-): Promise<string> {
-  let comment = `## PR Publishing  \n### The artifacts published by this PR:  `
+  artifacts: PublishedArtifact[]
+): Promise<{
+  comment: string
+  repoBlock: string
+}> {
+  let comment = `### The artifacts published by this PR:  `
   for (const artifactName of artifacts) {
     const artifact = await octo.rest.packages.getPackageForOrganization({
       org: context.repo.owner,
@@ -185,10 +195,12 @@ async function generateComment(
     .map(art => `includeModule('${art.group}', '${art.name}')`)
     .map(a => `            ${a}`) // Indent
     .join('\n')
-  const repoBlockStr = `repositories {
+  const repoBlock = `repositories {
     maven {
-        name 'Maven for PR #${prNumber}' // https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${prNumber}
-        url 'https://prmaven.neoforged.net/${context.repo.repo}/pr${prNumber}'
+        name 'Maven for PR #${prNumber}' // https://github.com/${
+          context.repo.owner
+        }/${context.repo.repo}/pull/${prNumber}
+        url '${getInput('base-maven-url')}/${context.repo.repo}/pr${prNumber}'
         content {
 ${includeModules}
         }
@@ -196,10 +208,9 @@ ${includeModules}
 }`
   comment += `
 \`\`\`gradle
-${repoBlockStr}
+${repoBlock}
 \`\`\``
-  repoBlock(repoBlockStr)
-  return comment
+  return { comment, repoBlock }
 }
 
 // NeoForge repo specific
@@ -265,16 +276,24 @@ async function generateMDK(
 ### MDK installation
 In order to setup a MDK using the latest PR version, run the following commands in a terminal.  
 The script works on both *nix and Windows as long as you have the JDK \`bin\` folder on the path.  
-The script will clone the MDK in a folder named \`${context.repo.repo}-pr${prNumber}\`.
+The script will clone the MDK in a folder named \`${
+    context.repo.repo
+  }-pr${prNumber}\`.
 \`\`\`sh
 mkdir ${context.repo.repo}-pr${prNumber}
 cd ${context.repo.repo}-pr${prNumber}
-curl -L https://prmaven.neoforged.net/${context.repo.repo}/pr${prNumber}/${path} -o mdk.zip
+curl -L ${getInput('base-maven-url')}/${
+    context.repo.repo
+  }/pr${prNumber}/${path} -o mdk.zip
 jar xf mdk.zip
 rm mdk.zip
 \`\`\`
 
-To test a production environment, you can download the installer from [here](https://prmaven.neoforged.net/${context.repo.repo}/pr${prNumber}/${artifact.group}/${artifact.name}/${artifact.version}/${artifact.name}-${artifact.version}-installer.jar).`
+To test a production environment, you can download the installer from [here](${getInput(
+    'base-maven-url'
+  )}/${context.repo.repo}/pr${prNumber}/${artifact.group}/${artifact.name}/${
+    artifact.version
+  }/${artifact.name}-${artifact.version}-installer.jar).`
 }
 
 interface WorkflowRun {
