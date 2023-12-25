@@ -50483,10 +50483,9 @@ async function generateMDK(uploader, prNumber, artifact, repoBlock) {
     if (response.status != 200) {
         response = await axios_1.default.get('https://github.com/neoforged/mdk/zipball/main', config);
     }
-    const zip = await jszip_1.default.loadAsync(response.data);
-    zip.forEach(relativePath => {
-        console.log(`File: ${relativePath}`);
-    });
+    let zip = await jszip_1.default.loadAsync(response.data);
+    // Find first root folder
+    zip = zip.folder(zip.filter((rel, f) => rel.startsWith('MDK-') && f.dir)[0].name);
     const gradleProperties = (await zip.file('gradle.properties').async('string')).split('\n');
     const neoVersionIndex = gradleProperties.findIndex(value => value.startsWith('neo_version='));
     gradleProperties[neoVersionIndex] = `neo_version=${artifact.version}`;
