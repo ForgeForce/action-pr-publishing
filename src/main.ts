@@ -15,6 +15,13 @@ export async function run(): Promise<void> {
 
     const workflow_run = context.payload.workflow_run as WorkflowRun
 
+    // Step 1
+    if (workflow_run.conclusion != 'success') {
+      console.log('Aborting, workflow run was not successful')
+      return
+    }
+
+    // Step 2
     const artifact = await octo.rest.actions
       .listWorkflowRunArtifacts({
         ...context.repo,
@@ -39,6 +46,7 @@ export async function run(): Promise<void> {
 
     console.log(`PR number: ${prNumber}`)
 
+    // Step 3
     const filter = getInput('artifacts-base-path')
     const toUpload = zip.filter((_relativePath, file) => {
       return (
@@ -105,7 +113,7 @@ export async function run(): Promise<void> {
     const self = getInput('self-name')
 
     let selfCommentId = null
-    for await (const comments of octo.paginate.iterator(
+    outer: for await (const comments of octo.paginate.iterator(
       octo.rest.issues.listComments,
       {
         ...context.repo,
@@ -115,10 +123,12 @@ export async function run(): Promise<void> {
       for (const comment of comments.data) {
         if (comment.user!.login == self) {
           selfCommentId = comment.id
+          break outer
         }
       }
     }
 
+    // Step 4
     if (context.repo.repo.toLowerCase() == 'neoforge') {
       const neoArtifact = artifacts.find(
         art => art.group == 'net.neoforged' && art.name == 'neoforge'
@@ -143,6 +153,7 @@ ${oldComment}
 
 </details>`
 
+    // Step 5
     if (selfCommentId) {
       await octo.rest.issues.updateComment({
         ...context.repo,
@@ -157,6 +168,7 @@ ${oldComment}
       })
     }
 
+    // Step 6
     await octo.rest.repos.createCommitComment({
       ...context.repo,
       commit_sha: payload.pull_request.head.sha,
@@ -298,6 +310,7 @@ To test a production environment, you can download the installer from [here](${g
 
 interface WorkflowRun {
   id: number
+  conclusion: 'success' | 'failure'
 }
 
 interface PublishedArtifact {

@@ -50333,6 +50333,12 @@ async function run() {
         const token = process.env['GITHUB_TOKEN'];
         const octo = (0, github_1.getOctokit)(token);
         const workflow_run = github_1.context.payload.workflow_run;
+        // Step 1
+        if (workflow_run.conclusion != 'success') {
+            console.log('Aborting, workflow run was not successful');
+            return;
+        }
+        // Step 2
         const artifact = await octo.rest.actions
             .listWorkflowRunArtifacts({
             ...github_1.context.repo,
@@ -50350,6 +50356,7 @@ async function run() {
         const payload = JSON.parse(await zip.file('event.json').async('string'));
         const prNumber = (payload.pull_request?.number ?? 0);
         console.log(`PR number: ${prNumber}`);
+        // Step 3
         const filter = (0, core_1.getInput)('artifacts-base-path');
         const toUpload = zip.filter((_relativePath, file) => {
             return (!file.dir && file.name != 'event.json' && file.name.startsWith(filter));
@@ -50397,16 +50404,18 @@ async function run() {
         let { comment, repoBlock } = await generateComment(octo, prNumber, artifacts);
         const self = (0, core_1.getInput)('self-name');
         let selfCommentId = null;
-        for await (const comments of octo.paginate.iterator(octo.rest.issues.listComments, {
+        outer: for await (const comments of octo.paginate.iterator(octo.rest.issues.listComments, {
             ...github_1.context.repo,
             issue_number: prNumber
         })) {
             for (const comment of comments.data) {
                 if (comment.user.login == self) {
                     selfCommentId = comment.id;
+                    break outer;
                 }
             }
         }
+        // Step 4
         if (github_1.context.repo.repo.toLowerCase() == 'neoforge') {
             const neoArtifact = artifacts.find(art => art.group == 'net.neoforged' && art.name == 'neoforge');
             if (neoArtifact != null) {
@@ -50422,6 +50431,7 @@ async function run() {
 ${oldComment}
 
 </details>`;
+        // Step 5
         if (selfCommentId) {
             await octo.rest.issues.updateComment({
                 ...github_1.context.repo,
@@ -50436,6 +50446,7 @@ ${oldComment}
                 body: comment
             });
         }
+        // Step 6
         await octo.rest.repos.createCommitComment({
             ...github_1.context.repo,
             commit_sha: payload.pull_request.head.sha,
