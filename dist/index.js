@@ -50367,7 +50367,7 @@ async function run() {
             console.log(`Uploaded ${file.name}`);
             uploadAmount++;
             if (file.name.endsWith('maven-metadata.xml')) {
-                const metadata = new fast_xml_parser_1.XMLBuilder().build(new fast_xml_parser_1.XMLParser().parse(await file.async('string'))).metadata;
+                const metadata = new fast_xml_parser_1.XMLParser().parse(await file.async('string')).metadata;
                 // Use the path as the artifact name and group just in case
                 const split = file.name.split('/');
                 split.pop();

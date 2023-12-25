@@ -60,8 +60,8 @@ export async function run(): Promise<void> {
       uploadAmount++
 
       if (file.name.endsWith('maven-metadata.xml')) {
-        const metadata = new XMLBuilder().build(
-          new XMLParser().parse(await file.async('string'))
+        const metadata = new XMLParser().parse(
+          await file.async('string')
         ).metadata
 
         // Use the path as the artifact name and group just in case
