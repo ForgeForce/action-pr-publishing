@@ -50485,7 +50485,7 @@ async function generateMDK(uploader, prNumber, artifact, repoBlock) {
     }
     let zip = await jszip_1.default.loadAsync(response.data);
     // Find first root folder
-    zip = zip.folder(zip.filter((rel, f) => rel.startsWith('MDK-') && f.dir)[0].name);
+    zip = zip.folder(zip.filter((_, f) => f.dir)[0].name);
     const gradleProperties = (await zip.file('gradle.properties').async('string')).split('\n');
     const neoVersionIndex = gradleProperties.findIndex(value => value.startsWith('neo_version='));
     gradleProperties[neoVersionIndex] = `neo_version=${artifact.version}`;

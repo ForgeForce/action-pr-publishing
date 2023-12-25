@@ -223,9 +223,7 @@ async function generateMDK(
 
   let zip = await JSZip.loadAsync(response.data)
   // Find first root folder
-  zip = zip.folder(
-    zip.filter((rel, f) => rel.startsWith('MDK-') && f.dir)[0].name
-  )!
+  zip = zip.folder(zip.filter((_, f) => f.dir)[0].name)!
 
   const gradleProperties = (
     await zip.file('gradle.properties')!.async('string')
