@@ -5,6 +5,9 @@ inputs:
   artifacts_base_path:
     required: true
     description: 'Base paths for artifacts'
+  self-name:
+    description: 'The name of the self-user'
+    default: 'github-actions[bot]'
 
 runs:
   using: node20

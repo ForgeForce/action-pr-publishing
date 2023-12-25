@@ -77,13 +77,16 @@ export async function run(): Promise<void> {
     }
 
     console.log(`Finished uploading ${uploadAmount} items`)
+    console.log()
+
     console.log(`Published artifacts:`)
     artifacts.forEach(art =>
       console.log(`\t${art.group}:${art.name}:${art.version}`)
     )
 
+    const comment = await generateComment(octo, prNumber, artifacts)
     console.log(`Message:\n`)
-    console.log(await generateComment(octo, prNumber, artifacts))
+    console.log(comment)
 
     if (prNumber == 0) return
     const pr = await octo.rest.pulls.get({
@@ -93,7 +96,7 @@ export async function run(): Promise<void> {
 
     if (pr.data.state != 'open') return
 
-    const self = await octo.rest.apps.getAuthenticated()
+    const self = getInput('self-name')
 
     let selfCommentId = null
     for await (const comments of octo.paginate.iterator(
@@ -104,10 +107,24 @@ export async function run(): Promise<void> {
       }
     )) {
       for (const comment of comments.data) {
-        if (comment.user!.login == self.data.slug + '[bot]') {
+        if (comment.user!.login == self) {
           selfCommentId = comment.id
         }
       }
+    }
+
+    if (selfCommentId) {
+      await octo.rest.issues.updateComment({
+        ...context.repo,
+        comment_id: selfCommentId,
+        body: comment
+      })
+    } else {
+      await octo.rest.issues.createComment({
+        ...context.repo,
+        issue_number: prNumber,
+        body: comment
+      })
     }
   } catch (error) {
     // Fail the workflow run if an error occurs
@@ -128,7 +145,7 @@ async function generateComment(
       package_name: `pr${prNumber}.${artifactName.group}.${artifactName.name}`
     })
 
-    comment += `\n\t[\`${artifactName.group}:${artifactName.name}:${artifactName.version}\`](${artifact.data.html_url})`
+    comment += `\n- :package: [\`${artifactName.group}:${artifactName.name}:${artifactName.version}\`](${artifact.data.html_url})`
   }
   return comment
 }

@@ -50380,10 +50380,12 @@ async function run() {
             }
         }
         console.log(`Finished uploading ${uploadAmount} items`);
+        console.log();
         console.log(`Published artifacts:`);
         artifacts.forEach(art => console.log(`\t${art.group}:${art.name}:${art.version}`));
+        const comment = await generateComment(octo, prNumber, artifacts);
         console.log(`Message:\n`);
-        console.log(await generateComment(octo, prNumber, artifacts));
+        console.log(comment);
         if (prNumber == 0)
             return;
         const pr = await octo.rest.pulls.get({
@@ -50392,17 +50394,31 @@ async function run() {
         });
         if (pr.data.state != 'open')
             return;
-        const self = await octo.rest.apps.getAuthenticated();
+        const self = (0, core_1.getInput)('self-name');
         let selfCommentId = null;
         for await (const comments of octo.paginate.iterator(octo.rest.issues.listComments, {
             ...github_1.context.repo,
             issue_number: prNumber
         })) {
             for (const comment of comments.data) {
-                if (comment.user.login == self.data.slug + '[bot]') {
+                if (comment.user.login == self) {
                     selfCommentId = comment.id;
                 }
             }
+        }
+        if (selfCommentId) {
+            await octo.rest.issues.updateComment({
+                ...github_1.context.repo,
+                comment_id: selfCommentId,
+                body: comment
+            });
+        }
+        else {
+            await octo.rest.issues.createComment({
+                ...github_1.context.repo,
+                issue_number: prNumber,
+                body: comment
+            });
         }
     }
     catch (error) {
@@ -50420,7 +50436,7 @@ async function generateComment(octo, prNumber, artifacts) {
             package_type: 'maven',
             package_name: `pr${prNumber}.${artifactName.group}.${artifactName.name}`
         });
-        comment += `\n\t[\`${artifactName.group}:${artifactName.name}:${artifactName.version}\`](${artifact.data.html_url})`;
+        comment += `\n- :package: [\`${artifactName.group}:${artifactName.name}:${artifactName.version}\`](${artifact.data.html_url})`;
     }
     return comment;
 }
