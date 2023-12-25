@@ -50449,14 +50449,14 @@ async function generateComment(octo, prNumber, artifacts, repoBlock) {
         });
         comment += `\n- :package: [\`${artifactName.group}:${artifactName.name}:${artifactName.version}\`](${artifact.data.html_url})`;
     }
-    comment += `  \n\n### Repository Declaration:\n`;
+    comment += `  \n\n### Repository Declaration\nIn order to use the artifacts published by the PR, add the following repository to your buildscript:`;
     const includeModules = artifacts
         .map(art => `includeModule('${art.group}', '${art.name}')`)
         .map(a => `            ${a}`) // Indent
         .join('\n');
     const repoBlockStr = `repositories {
     maven {
-        name 'Maven for PR #${prNumber}'
+        name 'Maven for PR #${prNumber}' // https://github.com/${github_1.context.repo.owner}/${github_1.context.repo.repo}/pull/${prNumber}
         url 'https://prmaven.neoforged.net/${github_1.context.repo.repo}/pr${prNumber}'
         content {
 ${includeModules}
@@ -50493,7 +50493,7 @@ async function generateMDK(uploader, prNumber, artifact, repoBlock) {
     gradleProperties[mcVersionIndex] = `minecraft_version=${mcVersion}`;
     zip.file('gradle.properties', gradleProperties.join('\n'));
     let buildGradle = await zip.file('build.gradle').async('string');
-    buildGradle += `\n${repoBlock}`;
+    buildGradle += `\n// PR repository \n${repoBlock}`;
     zip.file('build.gradle', buildGradle);
     const path = `${artifact.group}/${artifact.name}/${artifact.version}/mdk-pr${prNumber}.zip`;
     await uploader(path, await zip.generateAsync({
@@ -50502,6 +50502,9 @@ async function generateMDK(uploader, prNumber, artifact, repoBlock) {
     console.log(`Generated and uploaded MDK`);
     return `
 ### MDK installation
+In order to setup a MDK using the latest PR version, run the following commands in a terminal.  
+The script works on both *nix and Windows as long as you have the JDK \`bin\` folder on the path.  
+The script will clone the MDK in a folder named \`${github_1.context.repo.repo}-pr${prNumber}\`.
 \`\`\`sh
 mkdir ${github_1.context.repo.repo}-pr${prNumber}
 cd ${github_1.context.repo.repo}-pr${prNumber}
@@ -50510,7 +50513,7 @@ jar xf mdk.zip
 rm mdk.zip
 \`\`\`
 
-[Installer link](https://prmaven.neoforged.net/${github_1.context.repo.repo}/pr${prNumber}/${artifact.group}/${artifact.name}/${artifact.version}/${artifact.name}-${artifact.version}-installer.jar)`;
+To test a production environment, you can download the installer from [here](https://prmaven.neoforged.net/${github_1.context.repo.repo}/pr${prNumber}/${artifact.group}/${artifact.name}/${artifact.version}/${artifact.name}-${artifact.version}-installer.jar)`;
 }
 
 
