@@ -50429,7 +50429,7 @@ async function run() {
 }
 exports.run = run;
 async function generateComment(octo, prNumber, artifacts) {
-    let comment = `# Published artifacts  \nThe artifacts published by this PR:  `;
+    let comment = `# PR Publishing  \nThe artifacts published by this PR:  `;
     for (const artifactName of artifacts) {
         const artifact = await octo.rest.packages.getPackageForOrganization({
             org: github_1.context.repo.owner,
@@ -50438,6 +50438,23 @@ async function generateComment(octo, prNumber, artifacts) {
         });
         comment += `\n- :package: [\`${artifactName.group}:${artifactName.name}:${artifactName.version}\`](${artifact.data.html_url})`;
     }
+    comment += `  \nRepository Declaration:\n`;
+    const includeModules = artifacts
+        .map(art => `includeModule('${art.group}', '${art.name}')`)
+        .map(a => `            ${a}`) // Indent
+        .join('\n');
+    comment += `
+\`\`\`gradle
+repositories {
+    maven {
+        name 'Maven for PR #${prNumber}'
+        url 'https://prmaven.neoforged.net/${github_1.context.repo.owner}/pr${prNumber}'
+        content {
+${includeModules}
+        }
+    }
+}
+\`\`\``;
     return comment;
 }
 
