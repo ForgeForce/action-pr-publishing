@@ -147,7 +147,7 @@ async function generateComment(
 
     comment += `\n- :package: [\`${artifactName.group}:${artifactName.name}:${artifactName.version}\`](${artifact.data.html_url})`
   }
-  comment += `  \nRepository Declaration:\n`
+  comment += `  \n\nRepository Declaration:\n`
   const includeModules = artifacts
     .map(art => `includeModule('${art.group}', '${art.name}')`)
     .map(a => `            ${a}`) // Indent
