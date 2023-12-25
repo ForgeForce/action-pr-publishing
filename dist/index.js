@@ -50335,6 +50335,8 @@ async function run() {
         const token = process.env['GITHUB_TOKEN'];
         const octo = (0, github_1.getOctokit)(token);
         const workflow_run = github_1.context.payload.workflow_run;
+        console.log(workflow_run.head_branch);
+        console.log(workflow_run.pull_requests);
         // Step 1
         if (workflow_run.conclusion != 'success') {
             console.log('Aborting, workflow run was not successful');

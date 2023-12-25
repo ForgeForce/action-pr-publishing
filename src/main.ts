@@ -18,6 +18,9 @@ export async function run(): Promise<void> {
 
     const workflow_run = context.payload.workflow_run as WorkflowRun
 
+    console.log(workflow_run.head_branch)
+    console.log(workflow_run.pull_requests)
+
     // Step 1
     if (workflow_run.conclusion != 'success') {
       console.log('Aborting, workflow run was not successful')
@@ -320,6 +323,8 @@ To test a production environment, you can download the installer from [here](${g
 interface WorkflowRun {
   id: number
   conclusion: 'success' | 'failure'
+  head_branch: string
+  pull_requests: any[]
 }
 
 interface PublishedArtifact {
