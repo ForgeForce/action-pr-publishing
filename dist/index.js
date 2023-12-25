@@ -50428,6 +50428,11 @@ async function run() {
                 body: comment
             });
         }
+        await octo.rest.repos.createCommitComment({
+            ...github_1.context.repo,
+            commit_sha: payload.pull_request.head.sha,
+            body: comment
+        });
     }
     catch (error) {
         // Fail the workflow run if an error occurs
