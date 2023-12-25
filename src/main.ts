@@ -222,6 +222,9 @@ async function generateMDK(
   }
 
   const zip = await JSZip.loadAsync(response.data)
+  zip.forEach(relativePath => {
+    console.log(`File: ${relativePath}`)
+  })
 
   const gradleProperties = (
     await zip.file('gradle.properties')!.async('string')
