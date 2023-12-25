@@ -50431,8 +50431,11 @@ async function run() {
     }
     catch (error) {
         // Fail the workflow run if an error occurs
-        if (error instanceof Error)
+        if (error instanceof Error) {
+            console.log(`Error: ${error.message}`);
+            console.log(error.stack);
             core.setFailed(error.message);
+        }
     }
 }
 exports.run = run;

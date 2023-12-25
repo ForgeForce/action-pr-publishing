@@ -150,7 +150,11 @@ export async function run(): Promise<void> {
     }
   } catch (error) {
     // Fail the workflow run if an error occurs
-    if (error instanceof Error) core.setFailed(error.message)
+    if (error instanceof Error) {
+      console.log(`Error: ${error.message}`)
+      console.log(error.stack)
+      core.setFailed(error.message)
+    }
   }
 }
 
