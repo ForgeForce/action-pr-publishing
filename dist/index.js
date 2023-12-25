@@ -50477,9 +50477,12 @@ async function generateMDK(uploader, prNumber, artifact, repoBlock) {
     const config = {
         responseType: 'arraybuffer'
     };
-    const response = await axios_1.default
+    let response = await axios_1.default
         .get(`https://github.com/neoforged/mdk/zipball/${mcVersion}`, config)
         .catch(_ => axios_1.default.get('https://github.com/neoforged/mdk/zipball/main', config));
+    if (response.status != 200) {
+        response = await axios_1.default.get('https://github.com/neoforged/mdk/zipball/main', config);
+    }
     const zip = await jszip_1.default.loadAsync(response.data);
     const gradleProperties = (await zip.file('gradle.properties').async('string')).split('\n');
     const neoVersionIndex = gradleProperties.findIndex(value => value.startsWith('neo_version='));

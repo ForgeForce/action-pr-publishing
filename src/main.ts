@@ -209,11 +209,17 @@ async function generateMDK(
   const config = {
     responseType: 'arraybuffer'
   } as AxiosRequestConfig
-  const response = await axios
+  let response = await axios
     .get(`https://github.com/neoforged/mdk/zipball/${mcVersion}`, config)
     .catch(_ =>
       axios.get('https://github.com/neoforged/mdk/zipball/main', config)
     )
+  if (response.status != 200) {
+    response = await axios.get(
+      'https://github.com/neoforged/mdk/zipball/main',
+      config
+    )
+  }
 
   const zip = await JSZip.loadAsync(response.data)
 
