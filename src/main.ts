@@ -137,7 +137,7 @@ async function generateComment(
   prNumber: number,
   artifacts: PublishedArtifact[]
 ): Promise<string> {
-  let comment = `# PR Publishing  \nThe artifacts published by this PR:  `
+  let comment = `## PR Publishing  \n### The artifacts published by this PR:  `
   for (const artifactName of artifacts) {
     const artifact = await octo.rest.packages.getPackageForOrganization({
       org: context.repo.owner,
@@ -147,7 +147,7 @@ async function generateComment(
 
     comment += `\n- :package: [\`${artifactName.group}:${artifactName.name}:${artifactName.version}\`](${artifact.data.html_url})`
   }
-  comment += `  \n\nRepository Declaration:\n`
+  comment += `  \n\n### Repository Declaration:\n`
   const includeModules = artifacts
     .map(art => `includeModule('${art.group}', '${art.name}')`)
     .map(a => `            ${a}`) // Indent
